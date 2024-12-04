@@ -8,7 +8,7 @@ The content of this GitHub repo is a product of a research project funded by Duo
 
 For a tutorial-style introduction to the analyses conducted in the paper, please visit:
 
-https://czopluoglu.github.io/Duolingo_paper/
+--- Link to R tutorial ---
 
 **Directory Structure and Contents**
 
