@@ -1,4 +1,4 @@
-# Extended Deterministic Gated Item Response Model to Simultaneously Identify Compromised Items and Examinees with Item Preknowledge 
+# Extended Deterministic Gated Item Response Model to Simultaneously Identify Compromised Items and Examinees with Item Preknowledge Using Response Accuracy Data
 
 **Acknowledgement**
 
