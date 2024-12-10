@@ -1,4 +1,4 @@
-# Extended Deterministic Gated Item Response Model to Simultaneously Identify Compromised Items and Examinees with Item Preknowledge Using Response Accuracy Data
+# Enhanced Deterministic Gated Item Response Model to Simultaneously Identify Compromised Items and Examinees with Item Preknowledge Using Response Accuracy Data
 
 **Acknowledgement**
 
@@ -8,7 +8,7 @@ The content of this GitHub repo is a product of a research project funded by Duo
 
 For a tutorial-style introduction to the analyses conducted in the paper, please visit:
 
---- Link to R tutorial ---
+https://czopluoglu.github.io/duolingo_dgirt
 
 **Directory Structure and Contents**
 
