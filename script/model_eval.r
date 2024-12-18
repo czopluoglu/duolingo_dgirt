@@ -1,57 +1,59 @@
-
+require(cmdstanr)
+################################################################################
 # Estimation Time 
 
-get_elapsed_time(stanfit)
+fit <- readRDS("./do_no_upload/model_fit.RDS")
 
-(sum(get_elapsed_time(stanfit))/4)/3600
+fit$time()
 
 ################################################################################
 # Analyze the parameter estimates
 
-View(summary(stanfit, pars = c("mu_thetat",
-                               "mu_thetac",
-                               "sigma_thetat",
-                               "sigma_thetac",
-                               "mu_b",
-                               "sigma_b",
-                               "omega_P"), probs = c(0.025, 0.975))$summary)
+fit$summary(variables = c("mu_thetat",
+                          "mu_thetac",
+                          "sigma_thetat",
+                          "sigma_thetac",
+                          "mu_b",
+                          "sigma_b",
+                          "omega_P"))
 
 
-View(summary(stanfit, pars = c("b"), probs = c(0.025, 0.975))$summary)
-View(summary(stanfit, pars = c("person"), probs = c(0.025, 0.975))$summary)
-View(summary(stanfit, pars = c("pC"), probs = c(0.025, 0.975))$summary)
-View(summary(stanfit, pars = c("pH"), probs = c(0.025, 0.975))$summary)
+View(fit$summary(variables = c("b")))
+View(fit$summary(variables = c("person")))
+View(fit$summary(variables = c("pC")))
+View(fit$summary(variables = c("pH")))
 
 ################################################################################
 # Model Diagnostics
 
-# Extract model summary with 95% credible intervals
-model_summary <- as.data.frame(
-  summary(stanfit, probs = c(0.025, 0.975))$summary
-)
+# Extract model summary
+model_summary <- as.data.frame(fit$summary(variables = c("b",
+                                                         "person",
+                                                         "pC",
+                                                         "pH")))
 
 # Add a column for parameter types extracted from row names
-model_summary$type <- gsub("\\[.*$", "", row.names(model_summary))
+model_summary$type <- gsub("\\[.*$", "", model_summary$variable)
 
-# Filter for person and item parameters of interest
-model_summary <- model_summary[model_summary$type%in%c('pC','pH','person','b'),]
+# Sampler diagnostics
+
+sampler_params <- posterior::as_draws_df(fit$sampler_diagnostics())
 
 # ESS
 
-  N    <- dim(model_summary)[[1]]
-  iter <- dim(extract(stanfit)[[1]])[[1]]
+  iter <- nrow(sampler_params)
   
-  model_summary$n_eff_ratio <- ratio <- model_summary[,'n_eff'] / iter
+  model_summary$n_eff_ratio <- model_summary[,'ess_bulk'] / iter
   
   psych::describeBy(model_summary$n_eff_ratio,
                     model_summary$type,
                     mat=TRUE)[,c('group1','min')]
   
-  psych::describeBy(model_summary$n_eff,
+  psych::describeBy(model_summary$ess_bulk,
                     model_summary$type,
                     mat=TRUE)[,c('group1','mean','min','max')]
   
-  ggplot(model_summary, aes(x = n_eff)) +
+  ggplot(model_summary, aes(x = ess_bulk)) +
     geom_histogram(fill = "blue", color = "black", alpha = 0.7) +
     facet_wrap(~type, scales = "free_y",nrow=2) +
     labs(
@@ -63,7 +65,7 @@ model_summary <- model_summary[model_summary$type%in%c('pC','pH','person','b'),]
   
 # Split Rhat
   
-  ggplot(model_summary, aes(x = Rhat)) +
+  ggplot(model_summary, aes(x = rhat)) +
     geom_histogram(binwidth = 0.002, fill = "blue", color = "black", alpha = 0.7) +
     facet_wrap(~type, scales = "free_y",nrow=2) +
     labs(
@@ -73,7 +75,7 @@ model_summary <- model_summary[model_summary$type%in%c('pC','pH','person','b'),]
     ) +
     theme_minimal()
   
-  psych::describeBy(model_summary$Rhat,
+  psych::describeBy(model_summary$rhat,
                     model_summary$type,
                     mat=TRUE)[,c('group1','mean','min','max')]
   
@@ -82,19 +84,13 @@ model_summary <- model_summary[model_summary$type%in%c('pC','pH','person','b'),]
 # Tree depth
   
   max_depth = 10
-  sampler_params <- get_sampler_params(stanfit, inc_warmup=FALSE)
-  treedepths <- do.call(rbind, sampler_params)[,'treedepth__']
-  table(treedepths)
-  n = length(treedepths[sapply(treedepths, function(x) x == max_depth)])
-  N = length(treedepths)
-  100 * n / N
+  table(sampler_params$treedepth__)
 
 # E-BMFI
-  
-  sampler_params <- get_sampler_params(stanfit, inc_warmup=FALSE)
+
   e_bfmi <- c()
-  for (n in 1:length(sampler_params)) {
-    energies = sampler_params[n][[1]][,'energy__']
+  for (n in 1:4) {
+    energies = sampler_params[sampler_params$.chain==n,]$energy__
     numer = sum(diff(energies)**2) / length(energies)
     denom = var(energies)
     e_bfmi[n] = numer / denom
@@ -102,26 +98,22 @@ model_summary <- model_summary[model_summary$type%in%c('pC','pH','person','b'),]
   }
   
 # Divergences
-  
-  sampler_params <- get_sampler_params(stanfit, inc_warmup=FALSE)
-  divergent <- do.call(rbind, sampler_params)[,'divergent__']
-  n = sum(divergent)
-  N = length(divergent)
-  100 * (n / N)
+
+  100 * mean(sampler_params$divergent__)
 
 ################################################################################
 # Parameter Estimates
   
   # Person parameters
   
-  theta <- summary(stanfit, pars = c("person"), probs = c(0.025, 0.975))$summary
-  theta <- matrix(theta[,1],ncol=2,byrow=TRUE)
+  theta <- matrix(fit$summary(variables = c("person"))$mean,
+                  ncol=2,byrow=FALSE)
   psych::describe(theta)
   
   # Item parameters
   
-  b <- summary(stanfit, pars = c("b"), probs = c(0.025, 0.975))$summary
-  psych::describe(b[,1])
+  b <- fit$summary(variables = c("b"))
+  psych::describe(b$mean)
   
   
   # Probability of Items being compromised
@@ -133,7 +125,7 @@ model_summary <- model_summary[model_summary$type%in%c('pC','pH','person','b'),]
   }
   
   
-  pC <- as.numeric(summary(stanfit, pars = c("pC"), probs = c(0.025, 0.975))$summary[,1])
+  pC <- fit$summary(variables = c("pC"))$mean
   
   psych::describeBy(pC,C_vec,mat=TRUE)[,c('group1','n','mean','sd','min','max')]
   
@@ -164,7 +156,7 @@ model_summary <- model_summary[model_summary$type%in%c('pC','pH','person','b'),]
 
   # Probability of examinees having item preknowledge
   
-  pH <- as.numeric(summary(stanfit, pars = c("pH"), probs = c(0.025, 0.975))$summary[,1])
+  pH <- fit$summary(variables = c("pH"))$mean
   
   psych::describeBy(pH,d_wide$group,mat=TRUE)[,c('group1','n','mean','sd','min','max')]
   
