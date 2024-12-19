@@ -542,14 +542,13 @@ mod <- cmdstan_model('./script/dgirt.stan')
 
 ## Single chain initialization
 
-In addition to the order constraints ($\tau_c > \tau_t$), discussed earlier, I am also employing a single chain initialization strategy as a complementary approach to further mitigate the risk of label switching. By initializing the parameters near plausible values within the vicinity of a single mode, this method helps stabilize the sampling process and reduces the likelihood of components switching labels during inference. While the order constraint enforces a structural restriction to break the symmetry of the mixture components, single chain initialization adds an extra layer of robustness by anchoring the chains to a specific mode early in the sampling process. Together, these strategies work in tandem to address the challenges posed by label switching, ensuring more reliable and interpretable posterior inferences. For more information, see [this link](https://mc-stan.org/docs/stan-users-guide/problematic-posteriors.html#hacks-as-fixes).
+In addition to the order constraints ($\theta_c > \theta_t$), discussed earlier, I am also employing a single chain initialization strategy as a complementary approach to further mitigate the risk of label switching. By initializing the parameters near plausible values within the vicinity of a single mode, this method helps stabilize the sampling process and reduces the likelihood of components switching labels during inference. While the order constraint enforces a structural restriction to break the symmetry of the mixture components, single chain initialization adds an extra layer of robustness by anchoring the chains to a specific mode early in the sampling process. Together, these strategies work in tandem to address the challenges posed by label switching, ensuring more reliable and interpretable posterior inferences. For more information, see [this link](https://mc-stan.org/docs/stan-users-guide/problematic-posteriors.html#hacks-as-fixes).
 
 The code below fits the model using a single chain and relatively fewer iterations. 
 
 ```{r, eval=FALSE,echo=TRUE}
 fit_init <- mod$sample(
   data            = data_resp,
-  seed            = 1234,
   chains          = 1,
   iter_warmup     = 150,
   iter_sampling   = 150,
@@ -607,7 +606,7 @@ fit <- mod$sample(
 
 # Save the model object with all parameters for future use or backup
 
-fit$save_object(file = "./do_no_upload/model_fit.RDS")
+fit$save_object(file = "./do_not_upload/model_fit.RDS")
 ```
 
 # Model Convergence
@@ -628,7 +627,7 @@ head(model_summary)
 
 - The `gsub()` function removes index annotations (e.g., [1], [2,1]) from parameter names to group parameters by type.
 
-The `model_summary` can be used for further diagnostics
+The `model_summary` can be used for further diagnostics.
 
 ## Effective Sample Sizes
 
